@@ -74,5 +74,5 @@ const createSessions = async () => {
     });
 };
 
-createSessions();
+//createSessions();
 module.exports = router;
