@@ -1,7 +1,4 @@
 const QueueModel = require("../models/queue");
-const { queueItem, QueueObject } = require("../models/queueObj");
-// const SessionModel = require("../models/session");
-const { progressConversation } = require("./bot-config");
 const Poller = require("./poller");
 
 let flowObj = {};
@@ -54,10 +51,10 @@ const sessionPollerFunction = (sessionQueue, client) => {
           console.log("customer", customer);
 
           // Delegate this to the bot agent
-          const response = current.type === "scheduler"
-            ? current.message
-            : await progressConversation(current.message, customer, current.client.session);
-
+          // const response = current.type === "scheduler"
+          //   ? current.message
+          //   : await progressConversation(current.message, customer, current.client.session);
+         const response = ''
           // Send response
           sendMessage(client, current.from, response)
             .then((response) => {

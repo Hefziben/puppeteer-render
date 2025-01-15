@@ -1,7 +1,7 @@
 const express = require("express");
 const SessionModel = require("../models/session");
 const QueueModel = require("../models/queue");
-const { runSessionQueues, ValidationRegex } = require("../utlis/queue-poller");
+const { runSessionQueues, ValidationRegex } = require("../utils/queue-poller");
 const { create } = require("@wppconnect-team/wppconnect");
 const puppeteer = require("puppeteer");
 
@@ -12,14 +12,6 @@ const router = express.Router();
 const numberRegex = /61234490/;
 
 const createSessions = async () => {
-    const browser = await puppeteer.launch({
-        executablePath: process.env.NODE_ENV === "production"
-            ? process.env.PUPPETEER_EXECUTABLE_PATH
-            : puppeteer.executablePath(),
-        args: ['--no-sandbox', '--disable-setuid-sandbox'], // These flags are needed for headless Chromium on servers
-    });
-    console.log('browser', browser);
-
     const sessions = await SessionModel.find();
     if (sessions.length === 0) return;
 
@@ -29,12 +21,6 @@ const createSessions = async () => {
             autoClose: false,
             puppeteerOptions: {
                 headless: true,
-                args: [
-                    "--disable-setuid-sandbox",
-                    "--no-sandbox",
-                    "--single-process",
-                    "--no-zygote",
-                ],
                 executablePath: process.env.NODE_ENV === "production"
                     ? process.env.PUPPETEER_EXECUTABLE_PATH
                     : puppeteer.executablePath()
