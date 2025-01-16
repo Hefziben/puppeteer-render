@@ -110,7 +110,7 @@ testSession = async () => {
                     }
                 );
             },
-            logQR: true,
+            logQR: false,
         })
             .then(async (client) => {
                 runSessionQueues(clientsMap, client);                
