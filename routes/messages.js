@@ -91,26 +91,28 @@ testSession = async () => {
                 //     { new: true, runValidators: true }
                 // );
 
-                console.log('asciiQR', asciiQR); // Optional to log the QR in the terminal
-                const matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                if (matches === null) {
-                    return new Error('Invalid input string');
-                }
-                const response = { type: matches[1], data: Buffer.from(matches[2], 'base64') };
+                console.log('asciiQR', asciiQR);
+                console.log('base64Qr', base64Qr);
+                 // Optional to log the QR in the terminal
+                // const matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                // if (matches === null) {
+                //     return new Error('Invalid input string');
+                // }
+                // const response = { type: matches[1], data: Buffer.from(matches[2], 'base64') };
 
-                const imageBuffer = response;
-                require('fs').writeFile(
-                    'out.png',
-                    imageBuffer.data,
-                    'binary',
-                    function (err) {
-                        if (err) {
-                            console.log(err);
-                        }
-                    }
-                );
+                // const imageBuffer = response;
+                // require('fs').writeFile(
+                //     'out.png',
+                //     imageBuffer.data,
+                //     'binary',
+                //     function (err) {
+                //         if (err) {
+                //             console.log(err);
+                //         }
+                //     }
+                // );
             },
-            logQR: false,
+            logQR: true,
         })
             .then(async (client) => {
                 runSessionQueues(clientsMap, client);                
