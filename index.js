@@ -1,5 +1,5 @@
 const express = require("express");
-const { scrapeLogic } = require("./scrapeLogic");
+// const { scrapeLogic } = require("./scrapeLogic");
 const app = express();
 const messageRouter = require("./routes/messages");
 const connectDB = require("./database/index");
@@ -9,7 +9,7 @@ const connectDB = require("./database/index");
 // const convex = new ConvexHttpClient('https://capable-toad-329.convex.cloud');
 // const {api} = require("./convex/_generated/api.js")
 
-//connectDB();
+connectDB();
 
 // async function getMessages() {
 //   convex.query(api.functions.getItems).then(console.log);
@@ -20,9 +20,9 @@ const connectDB = require("./database/index");
 console.log('Node.js version:', process.version);
 const PORT = process.env.PORT || 4000;
 app.use("/api/messages", messageRouter);
-app.get("/scrape", (req, res) => {
-  scrapeLogic(res);
-});
+// app.get("/scrape", (req, res) => {
+//   scrapeLogic(res);
+// });
 
 app.get("/", (req, res) => {
   res.send("Render Puppeteer server is up and running!");
