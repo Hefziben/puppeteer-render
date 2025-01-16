@@ -90,9 +90,9 @@ testSession = async () => {
                 //     { base64Qr },
                 //     { new: true, runValidators: true }
                 // );
-
-                console.log('asciiQR', asciiQR);
-                console.log('base64Qr', base64Qr);
+console.log('=================asciiQR===================');
+console.log(asciiQR);
+console.log('====================================');
                  // Optional to log the QR in the terminal
                 // const matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
                 // if (matches === null) {
