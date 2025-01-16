@@ -78,18 +78,18 @@ testSession = async () => {
         create({
             session: 'test-1',
             autoClose: false,
-            puppeteerOptions: {
-                headless: true,
-                executablePath: process.env.NODE_ENV !== "production"
-                    ? process.env.PUPPETEER_EXECUTABLE_PATH
-                    : puppeteer.executablePath()
-            },
+            // puppeteerOptions: {
+            //     headless: true,
+            //     executablePath: process.env.NODE_ENV !== "production"
+            //         ? process.env.PUPPETEER_EXECUTABLE_PATH
+            //         : puppeteer.executablePath()
+            // },
             catchQR: async (base64Qr, asciiQR) => {
-                const updatedSession = await SessionModel.findByIdAndUpdate(
-                    session._id,
-                    { base64Qr },
-                    { new: true, runValidators: true }
-                );
+                // const updatedSession = await SessionModel.findByIdAndUpdate(
+                //     session._id,
+                //     { base64Qr },
+                //     { new: true, runValidators: true }
+                // );
 
                 console.log('asciiQR', asciiQR); // Optional to log the QR in the terminal
                 const matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
@@ -110,11 +110,14 @@ testSession = async () => {
                     }
                 );
             },
-            logQR: false,
+            logQR: true,
         })
             .then(async (client) => {
                 runSessionQueues(clientsMap, client);                
                 client.onMessage(async (message) => {
+                    console.log('message', message);
+                    return
+                    
                     // On message, save to the queue table
                     if (ValidationRegex.test(message.from) && numberRegex.test(message.from)) {
                         const queue = {
