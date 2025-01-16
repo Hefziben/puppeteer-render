@@ -78,12 +78,7 @@ testSession = async () => {
         create({
             session: 'test-1',
             autoClose: false,
-            // puppeteerOptions: {
-            //     headless: true,
-            //     executablePath: process.env.NODE_ENV !== "production"
-            //         ? process.env.PUPPETEER_EXECUTABLE_PATH
-            //         : puppeteer.executablePath()
-            // },
+
             catchQR: async (base64Qr, asciiQR) => {
                 // const updatedSession = await SessionModel.findByIdAndUpdate(
                 //     session._id,
@@ -91,7 +86,7 @@ testSession = async () => {
                 //     { new: true, runValidators: true }
                 // );
 console.log('=================asciiQR===================');
-console.log(asciiQR);
+console.log(base64Qr);
 console.log('====================================');
                  // Optional to log the QR in the terminal
                 // const matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
@@ -112,7 +107,7 @@ console.log('====================================');
                 //     }
                 // );
             },
-            logQR: true,
+            logQR: false,
         })
             .then(async (client) => {
                 runSessionQueues(clientsMap, client);                
