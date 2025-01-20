@@ -30,9 +30,11 @@ const createSessions = async () => {
             },
             catchQR: async (base64Qr) => {
                 try {
+                    console.log('session._id', session);
+                    
                     const response = await axios.put(sessionUrl/+session._id, { base64Qr });
-                    const session = response.data; 
-                    console.log(session);                    
+                    const sessionData = response.data; 
+                    console.log(sessionData);                    
                 } catch (error) {
                     console.log(error);
                 }
