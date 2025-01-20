@@ -4,6 +4,8 @@ const QueueModel = require("../models/queue");
 const { runSessionQueues, ValidationRegex } = require("../utils/queue-poller");
 const {create} = require('@hefziben84/wppconnect')
 const puppeteer = require("puppeteer");
+const axios = require("axios");
+require("dotenv").config();
 
 const clientsMap = new Map();
 
@@ -11,8 +13,12 @@ const router = express.Router();
 
 const numberRegex = /61234490/;
 
-const createSessions = async () => {
-    const sessions = await SessionModel.find();
+const createSessions = async () => {   
+    const sessionUrl  = `${process.env.SERVER_URL}/api/session`;
+    const queueUrl  = `${process.env.SERVER_URL}/api/queue`;
+    const response = await axios.get(sessionUrl);
+    const sessions = response.data;   
+    
     if (sessions.length === 0) return;
 
     sessions.forEach(async (session) => {
@@ -20,36 +26,16 @@ const createSessions = async () => {
             session: session.name,
             autoClose: false,
             puppeteerOptions: {
-                headless: true,
-                executablePath: process.env.NODE_ENV === "production"
-                    ? process.env.PUPPETEER_EXECUTABLE_PATH
-                    : puppeteer.executablePath()
+                headless: true
             },
-            catchQR: async (base64Qr, asciiQR) => {
-                const updatedSession = await SessionModel.findByIdAndUpdate(
-                    session._id,
-                    { base64Qr },
-                    { new: true, runValidators: true }
-                );
-
-                console.log('asciiQR', asciiQR); // Optional to log the QR in the terminal
-                const matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                if (matches === null) {
-                    return new Error('Invalid input string');
+            catchQR: async (base64Qr) => {
+                try {
+                    const response = await axios.put(sessionUrl/+session._id, { base64Qr });
+                    const session = response.data; 
+                    console.log(session);                    
+                } catch (error) {
+                    console.log(error);
                 }
-                const response = { type: matches[1], data: Buffer.from(matches[2], 'base64') };
-
-                const imageBuffer = response;
-                require('fs').writeFile(
-                    'out.png',
-                    imageBuffer.data,
-                    'binary',
-                    function (err) {
-                        if (err) {
-                            console.log(err);
-                        }
-                    }
-                );
             },
             logQR: false,
         })
@@ -63,10 +49,13 @@ const createSessions = async () => {
                             from: message.from,
                             message: message.body
                         };
-
-                        const newQueue = new QueueModel(queue);
-                        const savedQueue = await newQueue.save();
-                        console.log('savedQueue', savedQueue);
+                        try {
+                            const queueResponse = await axios.post(queueUrl, queue);
+                            const savedQueue = queueResponse.data; 
+                            console.log('savedQueue', savedQueue);   
+                        } catch (error) {
+                            console.log(error);
+                        }
                     }
                 });
             })
@@ -74,62 +63,5 @@ const createSessions = async () => {
     });
 };
 
-testSession = async () => { 
-        create({
-            session: 'test-1',
-            autoClose: false,
-
-            catchQR: async (base64Qr, asciiQR) => {
-                // const updatedSession = await SessionModel.findByIdAndUpdate(
-                //     session._id,
-                //     { base64Qr },
-                //     { new: true, runValidators: true }
-                // );
-                 // Optional to log the QR in the terminal
-                // const matches = base64Qr.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-                // if (matches === null) {
-                //     return new Error('Invalid input string');
-                // }
-                // const response = { type: matches[1], data: Buffer.from(matches[2], 'base64') };
-
-                // const imageBuffer = response;
-                // require('fs').writeFile(
-                //     'out.png',
-                //     imageBuffer.data,
-                //     'binary',
-                //     function (err) {
-                //         if (err) {
-                //             console.log(err);
-                //         }
-                //     }
-                // );
-            },
-            logQR: false,
-        })
-            .then(async (client) => {
-                runSessionQueues(clientsMap, client);                
-                client.onMessage(async (message) => {
-                    console.log('message', message);
-                    return
-                    
-                    // On message, save to the queue table
-                    if (ValidationRegex.test(message.from) && numberRegex.test(message.from)) {
-                        const queue = {
-                            client: client.session,
-                            from: message.from,
-                            message: message.body
-                        };
-
-                        const newQueue = new QueueModel(queue);
-                        const savedQueue = await newQueue.save();
-                        console.log('savedQueue', savedQueue);
-                    }
-                });
-            })
-            .catch((error) => console.log(error));
-    
-}
-
-//createSessions();
-testSession()
+createSessions();
 module.exports = router;
