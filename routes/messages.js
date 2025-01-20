@@ -29,12 +29,12 @@ const createSessions = async () => {
                 headless: true
             },
             catchQR: async (base64Qr) => {
-                try {
-                    console.log('session._id', session);
-                    
-                    const response = await axios.put(sessionUrl/+session._id, { base64Qr });
-                    const sessionData = response.data; 
-                    console.log(sessionData);                    
+                try {                    
+                    const response = await axios.put(`${sessionUrl}/${session._id}`, { base64Qr });
+                    const sessionData = response.data;  
+                    if (sessionData) {
+                       console.log('new qr saved');                       
+                    }                  
                 } catch (error) {
                     console.log(error);
                 }
