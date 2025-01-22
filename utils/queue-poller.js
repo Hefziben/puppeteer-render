@@ -34,12 +34,12 @@ const runSessionPoller = (sessionQueue, client) => {
 const sessionPollerFunction = (sessionQueue, client) => {
   sessionQueue.poller.onPoll(async () => {
     const queueUrl  = `${process.env.SERVER_URL}/api/queue`;
-    const queueItems = await axios.get(queueUrl);    
-      if (queueItems.data.length === 0) {
+    const response = await axios.get(queueUrl);
+    const queueItems = response.data
+      if (queueItems.length === 0) {
         console.log("no items for ", sessionQueue.name, client?.connected);
         sessionQueue.poller.pollRefresh();
       } else {
-        console.log("items", queueItems.length);
         if (client?.connected) {
           const current = queueItems[0];
           if (!ValidationRegex.test(current.from)) {
