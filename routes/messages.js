@@ -1,6 +1,5 @@
 const express = require("express");
 const SessionModel = require("../models/session");
-const QueueModel = require("../models/queue");
 const { runSessionQueues, ValidationRegex } = require("../utils/queue-poller");
 const {create} = require('@hefziben84/wppconnect')
 const puppeteer = require("puppeteer");

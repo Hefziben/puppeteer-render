@@ -1,5 +1,6 @@
-const QueueModel = require("../models/queue");
+
 const Poller = require("./poller");
+require("dotenv").config();
 
 let flowObj = {};
 const delay = 3000;
@@ -30,8 +31,9 @@ const runSessionPoller = (sessionQueue, client) => {
 };
 
 const sessionPollerFunction = (sessionQueue, client) => {
-  sessionQueue.poller.onPoll(() => {
-    QueueModel.find({ client: sessionQueue.name }).then(async (queueItems) => {
+  sessionQueue.poller.onPoll(async () => {
+    const queueUrl  = `${process.env.SERVER_URL}/api/queue`;
+    const queueItems = await axios.get(queueUrl);
       if (queueItems.length === 0) {
         console.log("no items for ", sessionQueue.name, client?.connected);
         sessionQueue.poller.pollRefresh();
@@ -40,7 +42,7 @@ const sessionPollerFunction = (sessionQueue, client) => {
         if (client?.connected) {
           const current = queueItems[0];
           if (!ValidationRegex.test(current.from)) {
-            QueueModel.findByIdAndDelete(current._id).exec();
+            await axios.delete(queueUrl + "/" + current._id);
             sessionQueue.poller.pollRefresh();
             return;
           }
@@ -57,9 +59,9 @@ const sessionPollerFunction = (sessionQueue, client) => {
          const response = ''
           // Send response
           sendMessage(client, current.from, response)
-            .then((response) => {
+            .then(async (response) => {
               if (response === "success") {
-                QueueModel.findByIdAndDelete(current._id).exec();
+                await axios.delete(queueUrl + "/" + current._id);
                 client.stopTyping(current.from);
                 console.log("Result: success");
               } else {
@@ -77,7 +79,7 @@ const sessionPollerFunction = (sessionQueue, client) => {
           sessionQueue.poller.pollRefresh();
         }
       }
-    });
+
   });
   sessionQueue.poller.poll();
 };
