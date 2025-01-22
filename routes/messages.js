@@ -2,7 +2,6 @@ const express = require("express");
 const SessionModel = require("../models/session");
 const { runSessionQueues, ValidationRegex } = require("../utils/queue-poller");
 const {create} = require('@hefziben84/wppconnect')
-const puppeteer = require("puppeteer");
 const axios = require("axios");
 require("dotenv").config();
 
