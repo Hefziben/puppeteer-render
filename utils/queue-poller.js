@@ -35,6 +35,7 @@ const sessionPollerFunction = (sessionQueue, client) => {
       const queueItems = await fetchQueueData(queueUrl);
       console.log("Fetched queue data:", queueItems);
       console.log("queueItems", queueItems.length);
+      console.log('is connected?', client?.connected)
       
         if (queueItems.length === 0) {
           console.log("no items for ", sessionQueue.name, client?.connected);
