@@ -62,7 +62,7 @@ const sessionPollerFunction = (sessionQueue, client) => {
                     
           // Send response    
           isRecord = await axios.get(queueRecordsUrl + "/" + current._id);
-          if (isRecord) {
+          if (!isRecord) {
             sendMessage(client, current.from, response.data)
             .then(async (response) => {
               if (response === "success") {
