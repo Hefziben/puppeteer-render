@@ -111,7 +111,7 @@ const sendMessage = (client, from, message) => {
 
 async function getMessageFromAgent(requestBody) {
   let response = '';
-  const aiServerUrl  = `${process.env.AI_SERVER_URL_LOCAL}/api/messages/answer`;
+  const aiServerUrl  = `${process.env.AI_SERVER_URL}/api/messages/answer`;
   
 try {
    return response = await axios.post(aiServerUrl, requestBody);
