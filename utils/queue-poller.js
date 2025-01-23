@@ -28,7 +28,8 @@ const runSessionPoller = (sessionQueue, client) => {
 
 const sessionPollerFunction = (sessionQueue, client) => {
   sessionQueue.poller.onPoll(async () => {
-    const queueUrl  = `${process.env.SERVER_URL}/api/queue`;    
+    const queueUrl  = `${process.env.SERVER_URL}/api/queue`;
+    const queueRecordsUrl  = `${process.env.SERVER_URL}/api/queueRecords`;       
     const response = await axios.get(queueUrl);
     const queueItems = response.data
     console.log("queueItems", queueItems.length);
@@ -59,11 +60,14 @@ const sessionPollerFunction = (sessionQueue, client) => {
                response = await getMessageFromAgent(requestBody);
             }
                     
-          // Send response         
-          sendMessage(client, current.from, response.data)
+          // Send response    
+          isRecord = await axios.get(queueRecordsUrl + "/" + current._id);
+          if (isRecord) {
+            sendMessage(client, current.from, response.data)
             .then(async (response) => {
               if (response === "success") {
                 await axios.delete(queueUrl + "/" + current._id);
+                await axios.post(queueRecordsUrl, {item: current._id});
                 client.stopTyping(current.from);
                 console.log("Result: success");
               } else {
@@ -74,6 +78,8 @@ const sessionPollerFunction = (sessionQueue, client) => {
               client.stopTyping(current.from);
               console.error("Error when sending: ", error);
             });
+          }     
+
 
           sessionQueue.poller.pollRefresh();
         } else {
