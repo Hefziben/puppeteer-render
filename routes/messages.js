@@ -26,6 +26,11 @@ const createSessions = async () => {
             puppeteerOptions: {
                 headless: true
             },
+            statusFind: (statusSession, session) => {
+                console.log('Status Session: ', statusSession); //return isLogged || notLogged || browserClose || qrReadSuccess || qrReadFail || autocloseCalled || desconnectedMobile || deleteToken
+                //Create session wss return "serverClose" case server for close
+                console.log('Session name: ', session);
+              },
             catchQR: async (base64Qr) => {
                 try {                    
                     const response = await axios.put(`${sessionUrl}/${session._id}`, { base64Qr });
