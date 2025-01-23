@@ -15,15 +15,10 @@ const runSessionQueues = (Clients, client) => {
     flowObj[client.session] = { name: client.session, poller: new Poller(delay, client.session) };
     runSessionPoller(flowObj[client.session], client);
   } else {
-    console.log("new session", client.session);
     Clients.set(client.session, client);
     flowObj[client.session] = { name: client.session, poller: new Poller(delay, client.session) };
     runSessionPoller(flowObj[client.session], client);
   }
-
-  console.log("====================================");
-  console.log("runSessionQueues", Clients.size);
-  console.log("====================================");
 };
 
 const runSessionPoller = (sessionQueue, client) => {
@@ -33,9 +28,11 @@ const runSessionPoller = (sessionQueue, client) => {
 
 const sessionPollerFunction = (sessionQueue, client) => {
   sessionQueue.poller.onPoll(async () => {
-    const queueUrl  = `${process.env.SERVER_URL}/api/queue`;
+    const queueUrl  = `${process.env.SERVER_URL}/api/queue`;    
     const response = await axios.get(queueUrl);
     const queueItems = response.data
+    console.log("queueItems", queueItems.length);
+    
       if (queueItems.length === 0) {
         console.log("no items for ", sessionQueue.name, client?.connected);
         sessionQueue.poller.pollRefresh();
@@ -51,15 +48,19 @@ const sessionPollerFunction = (sessionQueue, client) => {
           client.startTyping(current.from);
 
           const customer = await getCustomerId(current.from);
-          console.log("customer", customer);
-
-          // Delegate this to the bot agent
-          // const response = current.type === "scheduler"
-          //   ? current.message
-          //   : await progressConversation(current.message, customer, current.client.session);
-         const response = ''
-          // Send response
-          sendMessage(client, current.from, response)
+          // Delegate this to the bot agent          
+            const requestBody = {
+              message: current.message,
+              customer: customer,
+              session: current.client.session
+            }; 
+            let response = ''
+            if ( current.type === "whatsapp") {              
+               response = await getMessageFromAgent(requestBody);
+            }
+                    
+          // Send response         
+          sendMessage(client, current.from, response.data)
             .then(async (response) => {
               if (response === "success") {
                 await axios.delete(queueUrl + "/" + current._id);
@@ -96,7 +97,7 @@ const sendMessage = (client, from, message) => {
     return client
       .sendText(from, message)
       .then(() => {
-        console.log("Result: success");
+        console.log("message sent: success", message);
         return "success";
       })
       .catch((error) => {
@@ -107,6 +108,18 @@ const sendMessage = (client, from, message) => {
     return "not connected yet";
   }
 };
+
+async function getMessageFromAgent(requestBody) {
+  let response = '';
+  const aiServerUrl  = `${process.env.AI_SERVER_URL_LOCAL}/api/messages/answer`;
+  
+try {
+   return response = await axios.post(aiServerUrl, requestBody);
+} catch (error) {
+  console.error("Error while sending request to AI server:", error.message);
+  throw new Error("Failed to process the request."); // Re-throw or handle the error appropriately
+}
+}
 
 module.exports = {
   runSessionQueues,
