@@ -38,8 +38,9 @@ const sessionPollerFunction = (sessionQueue, client) => {
         console.log("no items for ", sessionQueue.name, client?.connected);
         sessionQueue.poller.pollRefresh();
       } else {
+        console.log('is connected?', client?.connected);        
         if (client?.connected) {
-          const current = queueItems[0];
+          const current = queueItems[0]; 
           if (!ValidationRegex.test(current.from)) {
             await axios.delete(queueUrl + "/" + current._id);
             sessionQueue.poller.pollRefresh();
@@ -62,7 +63,7 @@ const sessionPollerFunction = (sessionQueue, client) => {
                     
           // Send response    
           isRecord = await axios.get(queueRecordsUrl + "/" + current._id);
-          if (!isRecord) {
+          if (!isRecord.data) {
             sendMessage(client, current.from, response.data)
             .then(async (response) => {
               if (response === "success") {
