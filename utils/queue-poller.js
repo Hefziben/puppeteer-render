@@ -1,6 +1,7 @@
 
 const Poller = require("./poller");
 const axios = require("axios");
+const https = require("https");
 require("dotenv").config();
 
 let flowObj = {};
@@ -30,64 +31,75 @@ const sessionPollerFunction = (sessionQueue, client) => {
   sessionQueue.poller.onPoll(async () => {
     const queueUrl  = `${process.env.SERVER_URL}/api/queue`;
     const queueRecordsUrl  = `${process.env.SERVER_URL}/api/queueRecords`;       
-    const response = await axios.get(queueUrl);
-    const queueItems = response.data
-    console.log("queueItems", queueItems.length);
-    
-      if (queueItems.length === 0) {
-        console.log("no items for ", sessionQueue.name, client?.connected);
-        sessionQueue.poller.pollRefresh();
-      } else {
-        console.log('is connected?', client?.connected);        
-        if (client?.connected) {
-          const current = queueItems[0]; 
-          if (!ValidationRegex.test(current.from)) {
-            await axios.delete(queueUrl + "/" + current._id);
-            sessionQueue.poller.pollRefresh();
-            return;
-          }
-
-          client.startTyping(current.from);
-
-          const customer = await getCustomerId(current.from);
-          // Delegate this to the bot agent          
-            const requestBody = {
-              message: current.message,
-              customer: customer,
-              session: current.client.session
-            }; 
-            let response = ''
-            if ( current.type === "whatsapp") {              
-               response = await getMessageFromAgent(requestBody);
-            }
-                    
-          // Send response    
-          isRecord = await axios.get(queueRecordsUrl + "/" + current._id);
-          if (!isRecord.data) {
-            sendMessage(client, current.from, response.data)
-            .then(async (response) => {
-              if (response === "success") {
-                await axios.delete(queueUrl + "/" + current._id);
-                await axios.post(queueRecordsUrl, {item: current._id});
-                client.stopTyping(current.from);
-                console.log("Result: success");
-              } else {
-                client.stopTyping(current.from);
-              }
-            })
-            .catch((error) => {
-              client.stopTyping(current.from);
-              console.error("Error when sending: ", error);
-            });
-          }     
-
-
+    try {
+      const queueItems = await fetchQueueData(queueUrl);
+      console.log("Fetched queue data:", queueItems);
+      console.log("queueItems", queueItems.length);
+      
+        if (queueItems.length === 0) {
+          console.log("no items for ", sessionQueue.name, client?.connected);
           sessionQueue.poller.pollRefresh();
         } else {
-          console.log("not connected yet");
-          sessionQueue.poller.pollRefresh();
+          console.log('is connected?', client?.connected);        
+          if (client?.connected) {
+            const current = queueItems[0]; 
+            if (!ValidationRegex.test(current.from)) {
+              await axios.delete(queueUrl + "/" + current._id);
+              sessionQueue.poller.pollRefresh();
+              return;
+            }
+  
+            client.startTyping(current.from);
+  
+            const customer = await getCustomerId(current.from);
+            // Delegate this to the bot agent          
+              const requestBody = {
+                message: current.message,
+                customer: customer,
+                session: current.client.session
+              }; 
+              let response = ''
+              if ( current.type === "whatsapp") {              
+                 response = await getMessageFromAgent(requestBody);
+              }
+                      
+            // Send response  
+            try {
+              const isRecord = await fetchQueueData(queueRecordsUrl + "/" + current._id);
+              console.log("Fetched isRecord data:", isRecord);
+              if (!isRecord) {
+                sendMessage(client, current.from, response.data)
+                .then(async (response) => {
+                  if (response === "success") {
+                    await axios.delete(queueUrl + "/" + current._id);
+                    await axios.post(queueRecordsUrl, {item: current._id});
+                    client.stopTyping(current.from);
+                    console.log("Result: success");
+                    sessionQueue.poller.pollRefresh();
+                  } else {
+                    client.stopTyping(current.from);
+                    sessionQueue.poller.pollRefresh();
+                  }
+                })
+                .catch((error) => {
+                  client.stopTyping(current.from);
+                  console.error("Error when sending: ", error);
+                  sessionQueue.poller.pollRefresh();
+                });
+              }  
+            } catch (error) {
+              console.error("Error fetching queue data:", error.message);
+            }
+            
+          } else {
+            console.log("not connected yet");
+            sessionQueue.poller.pollRefresh();
+          }
         }
-      }
+    } catch (error) {
+      console.error("Error fetching queue data:", error.message);
+    }
+
 
   });
   sessionQueue.poller.poll();
@@ -127,6 +139,52 @@ try {
   throw new Error("Failed to process the request."); // Re-throw or handle the error appropriately
 }
 }
+
+
+const httpsAgent = new https.Agent({
+  keepAlive: true, // Persistent connection
+  rejectUnauthorized: false, // Optional: Disable SSL certificate validation (use cautiously)
+});
+
+async function fetchQueueData(queueUrl, retries = 3) {
+  try {
+    // Create an Axios instance with custom configuration
+    const axiosInstance = axios.create({
+      timeout: 10000, // 10 seconds timeout
+      httpsAgent, // Use the HTTPS agent for persistent connection
+    });
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        console.log(`Attempt ${attempt} to fetch data from: ${queueUrl}`);
+        const response = await axiosInstance.get(queueUrl);
+        console.log("Data successfully fetched:", response.data);
+        return response.data;
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error(`Axios error on attempt ${attempt}:`, error.message);
+        } else {
+          console.error(`Unexpected error on attempt ${attempt}:`, error);
+        }
+        // Retry logic: Throw error only after the last attempt
+        if (attempt === retries) throw error;
+      }
+    }
+  } catch (error) {
+    // Handle final error
+    if (axios.isAxiosError(error)) {
+      console.error("Final Axios error:", error.message);
+    } else {
+      console.error("Unexpected final error:", error);
+    }
+
+    throw new Error("Failed to fetch queue data after multiple attempts.");
+  }
+}
+
+module.exports = fetchQueueData;
+
+
 
 module.exports = {
   runSessionQueues,
