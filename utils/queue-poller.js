@@ -33,7 +33,6 @@ const sessionPollerFunction = (sessionQueue, client) => {
     const queueRecordsUrl  = `${process.env.SERVER_URL}/api/queueRecords`;       
     try {
       const queueItems = await fetchQueueData(queueUrl);
-      console.log("Fetched queue data:", queueItems);
       console.log("queueItems", queueItems.length);
       console.log('is connected?', client?.connected)
       
@@ -60,8 +59,15 @@ const sessionPollerFunction = (sessionQueue, client) => {
                 session: current.client.session
               }; 
               let response = ''
-              if ( current.type === "whatsapp") {              
+              if ( current.type === "whatsapp") {  
+                console.log('is whatsapp', current.type);
+                            
                  response = await getMessageFromAgent(requestBody);
+                 if (response === 'error') {
+                  client.stopTyping(current.from);
+                  sessionQueue.poller.pollRefresh();
+                  return;
+                 }
               }
                       
             // Send response  
@@ -69,9 +75,9 @@ const sessionPollerFunction = (sessionQueue, client) => {
               const isRecord = await fetchQueueData(queueRecordsUrl + "/" + current._id);
               console.log("Fetched isRecord data:", isRecord);
               if (!isRecord) {
-                sendMessage(client, current.from, response.data)
-                .then(async (response) => {
-                  if (response === "success") {
+                sendMessage(client, current.from, response)
+                .then(async (res) => {
+                  if (res === "success") {
                     await axios.delete(queueUrl + "/" + current._id);
                     await axios.post(queueRecordsUrl, {item: current._id});
                     client.stopTyping(current.from);
@@ -134,10 +140,13 @@ async function getMessageFromAgent(requestBody) {
   const aiServerUrl  = `${process.env.AI_SERVER_URL}/api/messages/answer`;
   
 try {
-   return response = await axios.post(aiServerUrl, requestBody);
+    response = await axios.post(aiServerUrl, requestBody);
+   console.log(response.data);
+   return response.data
+   
 } catch (error) {
   console.error("Error while sending request to AI server:", error.message);
-  throw new Error("Failed to process the request."); // Re-throw or handle the error appropriately
+  return 'error'
 }
 }
 
